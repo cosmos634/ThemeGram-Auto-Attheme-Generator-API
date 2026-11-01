@@ -9,6 +9,17 @@ from app.services.color_processor import rgb_to_telegram_int
 _KEY = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
+def _wallpaper_file_offset(color_body: bytes) -> tuple[bytes, int]:
+    """Build Telegram's byte-offset header for an embedded .attheme wallpaper."""
+    offset = 0
+    while True:
+        header = f"wallpaperFileOffset={offset}\n".encode("ascii")
+        calculated = len(header) + len(color_body) + len(b"WPS\n")
+        if calculated == offset:
+            return header, offset
+        offset = calculated
+
+
 def generate_attheme(
     template_path: Path,
     mapping_path: Path,
@@ -17,8 +28,8 @@ def generate_attheme(
 ) -> bytes:
     """Generate a Telegram Android .attheme with an optional binary JPEG wallpaper.
 
-    Telegram stores image wallpapers as raw image bytes between WPS and WPE
-    markers. The payload must not be Base64-encoded.
+    Telegram uses both WPS/WPE markers and wallpaperFileOffset. The offset is
+    the absolute byte index of the first wallpaper byte, not a character count.
     """
     template = template_path.read_text(encoding="utf-8")
     mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
@@ -40,19 +51,22 @@ def generate_attheme(
             raise ValueError(f"Unknown color role for theme key: {key}")
         indexes = positions.get(key)
         if not indexes:
-            # Never add unverified keys absent from the trusted template.
             continue
         value = rgb_to_telegram_int(colors[role])
         for index in indexes:
             lines[index] = f"{key}={value}"
 
-    # Do not put image data in chat_wallpaper: that variable is a color value.
-    # The actual image is a separate binary section in the .attheme container.
-    output = ("\n".join(lines).rstrip() + "\n").encode("utf-8")
+    # Strip any stale offset from the template before rebuilding the file.
+    lines = [line for line in lines if not line.startswith("wallpaperFileOffset=")]
+    color_body = ("\n".join(lines).rstrip() + "\n").encode("utf-8")
     if not any("=" in line for line in lines):
         raise ValueError("Generated theme is empty.")
 
-    if wallpaper_bytes:
-        output += b"\nWPS\n" + wallpaper_bytes + b"\nWPE\n"
+    if not wallpaper_bytes:
+        return color_body
 
+    header, offset = _wallpaper_file_offset(color_body)
+    output = header + color_body + b"WPS\n" + wallpaper_bytes + b"\nWPE\n"
+    if output[offset:offset + len(wallpaper_bytes)] != wallpaper_bytes:
+        raise ValueError("Wallpaper byte offset verification failed.")
     return output
