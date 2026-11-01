@@ -48,4 +48,4 @@ def create_app(validate_config: bool = True) -> FastAPI:
     return application
 
 
-app = create_app()
+app = create_app(validate_config=False)
