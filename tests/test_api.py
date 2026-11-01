@@ -37,7 +37,7 @@ def test_missing_api_key_is_rejected(monkeypatch):
 def test_generate_returns_attheme_with_embedded_wallpaper(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "api_key", "a" * 40)
     template = tmp_path / "base.attheme"
-    template.write_text("windowBackgroundWhite=-1\\nactionBarDefault=-2\\n", encoding="utf-8")
+    template.write_text("windowBackgroundWhite=-1\\nactionBarDefault=-2\\nchat_wallpaper=-3\\n", encoding="utf-8")
     mapping = tmp_path / "mapping.json"
     mapping.write_text('{"windowBackgroundWhite":"background","actionBarDefault":"primary"}', encoding="utf-8")
     monkeypatch.setattr(settings, "template_path", template)
