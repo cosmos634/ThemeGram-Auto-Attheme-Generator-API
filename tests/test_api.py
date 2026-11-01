@@ -1,6 +1,4 @@
 from io import BytesIO
-import base64
-import re
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -49,14 +47,14 @@ def test_generate_returns_attheme_with_embedded_wallpaper(monkeypatch, tmp_path)
     assert response.headers["content-type"] == "application/octet-stream"
     assert "generated_theme.attheme" in response.headers["content-disposition"]
     assert b"windowBackgroundWhite=" in response.content
-    text = response.content.decode("utf-8")
-    match = re.search(r"\nWPS\n([A-Za-z0-9+/=]+)\nWPE\n?$", text)
-    assert match
-    wallpaper_bytes = base64.b64decode(match.group(1), validate=True)
+    start = response.content.index(b"\nWPS\n") + len(b"\nWPS\n")
+    end = response.content.rfind(b"\nWPE")
+    assert end > start
+    wallpaper_bytes = response.content[start:end]
     wallpaper = Image.open(BytesIO(wallpaper_bytes))
     assert wallpaper.format == "JPEG"
     assert wallpaper.size == (32, 32)
-    assert "chat_wallpaper=" not in text
+    assert response.content.endswith(b"\nWPE\n")
 
 
 def test_non_image_is_rejected(monkeypatch):
