@@ -56,8 +56,14 @@ def generate_attheme(
         for index in indexes:
             lines[index] = f"{key}={value}"
 
-    # Strip any stale offset from the template before rebuilding the file.
-    lines = [line for line in lines if not line.startswith("wallpaperFileOffset=")]
+    # Strip stale offsets. When an embedded wallpaper is present, also remove
+    # chat_wallpaper: Telegram treats that key as a solid/gradient background
+    # and its preview path then skips the embedded WPS image entirely.
+    lines = [
+        line for line in lines
+        if not line.startswith("wallpaperFileOffset=")
+        and not (wallpaper_bytes and line.split("=", 1)[0].strip() == "chat_wallpaper")
+    ]
     color_body = ("\n".join(lines).rstrip() + "\n").encode("utf-8")
     if not any("=" in line for line in lines):
         raise ValueError("Generated theme is empty.")
