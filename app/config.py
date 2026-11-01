@@ -11,7 +11,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT_DIR / ".env")
 
 
-@dataclass(frozen=True)
+@dataclass
 class Settings:
     api_key: str = os.getenv("API_KEY", "")
     max_upload_bytes: int = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
