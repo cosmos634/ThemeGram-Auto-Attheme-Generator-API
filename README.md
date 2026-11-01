@@ -2,7 +2,7 @@
 
 A small FastAPI service that turns an uploaded image into a Telegram Android `.attheme` file using local Pillow color analysis. It is designed for one trusted ThemeGram bot server, protected by one shared API key.
 
-> Status: initial project setup. See the installation, API usage, security, and Telegram bot integration instructions below.
+> Status: implementation submitted for review in the linked pull request. Run the test suite in your deployment environment before exposing the API publicly.
 
 ## Features
 
@@ -156,4 +156,4 @@ The template contains a deliberately selected set of Telegram Android theme keys
 
 ## License and attribution
 
-Application code in this repository is provided under the MIT License. The small sample theme-key template is adapted from the Telegram-FOSS `night.attheme` asset; consult the upstream repository's license and retain its attribution/license terms when redistributing that asset.
+No separate license has been declared for this project yet. The small sample theme-key template is adapted from the Telegram-FOSS `night.attheme` asset; consult the upstream repository's license and retain its attribution/license terms when redistributing that asset.
