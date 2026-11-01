@@ -16,6 +16,5 @@
   "chat_outSentCheck": "accent",
   "avatar_backgroundRed": "accent",
   "avatar_backgroundOrange": "secondary",
-  "avatar_backgroundSaved": "primary",
-  "chat_wallpaper": "background"
+  "avatar_backgroundSaved": "primary"
 }
