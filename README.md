@@ -52,7 +52,7 @@ X-API-Key: YOUR_SECRET_API_KEY
 
 Multipart form field: `image` (JPEG, PNG, or WEBP; maximum 10 MiB).
 
-Returns `generated_theme_pack.zip` containing `generated_theme.attheme`, `chat_wallpaper.jpg`, and `HOW_TO_APPLY.txt`. Telegram treats theme colors and chat wallpaper as separate items, so set the wallpaper separately after applying the theme.
+Returns one `generated_theme.attheme` file. The JPEG wallpaper is embedded as raw binary data between the `WPS` and `WPE` markers, alongside the theme colors.
 
 Example with cURL:
 
@@ -60,7 +60,7 @@ Example with cURL:
 curl -X POST http://127.0.0.1:8000/api/v1/generate \
   -H "X-API-Key: YOUR_SECRET_API_KEY" \
   -F "image=@wallpaper.jpg" \
-  --output generated_theme_pack.zip
+  --output generated_theme.attheme
 ```
 
 Example with Python `requests`:
@@ -76,7 +76,7 @@ with open("wallpaper.jpg", "rb") as image:
         timeout=30,
     )
 response.raise_for_status()
-with open("generated_theme_pack.zip", "wb") as output:
+with open("generated_theme.attheme", "wb") as output:
     output.write(response.content)
 ```
 
@@ -119,9 +119,8 @@ async def create_attheme(image_bytes: bytes) -> bytes:
 # Inside an aiogram message handler after receiving a photo:
 # photo = message.photo[-1]
 # buffer = await bot.download(photo)
-# package_bytes = await create_attheme(buffer.getvalue())
-# The ZIP contains the .attheme and chat_wallpaper.jpg files.
-# Extract and send them as separate Telegram documents.
+# attheme_bytes = await create_attheme(buffer.getvalue())
+# Send this single .attheme file; the JPEG wallpaper is embedded in WPS/WPE.
 ```
 
 ## Tests
