@@ -1,4 +1,5 @@
 from io import BytesIO
+import zipfile
 
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -44,9 +45,14 @@ def test_generate_returns_attheme(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "mapping_path", mapping)
     response = client.post("/api/v1/generate", headers={"X-API-Key": "a" * 40}, files={"image": ("x.png", png_bytes(), "image/png")})
     assert response.status_code == 200
-    assert response.headers["content-type"] == "application/octet-stream"
-    assert "generated_theme.attheme" in response.headers["content-disposition"]
-    assert b"windowBackgroundWhite=" in response.content
+    assert response.headers["content-type"] == "application/zip"
+    assert "generated_theme_pack.zip" in response.headers["content-disposition"]
+    with zipfile.ZipFile(BytesIO(response.content)) as package:
+        assert b"windowBackgroundWhite=" in package.read("generated_theme.attheme")
+        wallpaper = Image.open(BytesIO(package.read("chat_wallpaper.jpg")))
+        assert wallpaper.format == "JPEG"
+        assert wallpaper.size == (32, 32)
+        assert "HOW_TO_APPLY.txt" in package.namelist()
 
 
 def test_non_image_is_rejected(monkeypatch):
