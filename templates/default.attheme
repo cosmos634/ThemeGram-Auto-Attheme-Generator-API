@@ -1,0 +1,21 @@
+# ThemeGram base template
+# Based on verified Telegram Android theme keys from Telegram-FOSS night.attheme.
+# Source: https://github.com/Telegram-FOSS-Team/Telegram-FOSS
+windowBackgroundWhite=-15198183
+windowBackgroundGray=-16777216
+windowBackgroundWhiteBlackText=-1
+dialogBackground=-14803426
+dialogTextBlue=-10177041
+divider=-16777216
+actionBarDefault=-14474458
+chat_messagePanelBackground=-14803425
+chat_messagePanelText=-1
+chat_inBubble=-14737117
+chat_outBubble=-13210449
+chat_messageTextIn=-328966
+chat_messageTextOut=-328966
+chat_replyPanelClose=1694498815
+chat_outSentCheck=-506859265
+avatar_backgroundRed=-2326437
+avatar_backgroundOrange=-869276
+avatar_backgroundSaved=-11558424
