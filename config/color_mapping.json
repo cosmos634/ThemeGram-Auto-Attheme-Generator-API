@@ -1,0 +1,20 @@
+{
+  "windowBackgroundWhite": "background",
+  "windowBackgroundGray": "background",
+  "windowBackgroundWhiteBlackText": "text",
+  "dialogBackground": "background",
+  "dialogTextBlue": "accent",
+  "divider": "secondary",
+  "actionBarDefault": "primary",
+  "chat_messagePanelBackground": "background",
+  "chat_messagePanelText": "text",
+  "chat_inBubble": "secondary",
+  "chat_outBubble": "primary",
+  "chat_messageTextIn": "text",
+  "chat_messageTextOut": "text",
+  "chat_replyPanelClose": "muted_text",
+  "chat_outSentCheck": "accent",
+  "avatar_backgroundRed": "accent",
+  "avatar_backgroundOrange": "secondary",
+  "avatar_backgroundSaved": "primary"
+}
