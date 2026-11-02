@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections import defaultdict, deque
 from threading import Lock
 from time import monotonic
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from app.config import settings
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 _rate_lock = Lock()
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
+_UNSAFE_FILENAME = re.compile(r"[^A-Za-z0-9._ -]+")
 
 
 def _check_rate_limit(client_key: str) -> None:
@@ -34,8 +36,20 @@ def _check_rate_limit(client_key: str) -> None:
         events.append(now)
 
 
+def _theme_filename(theme_name: str | None) -> str:
+    name = (theme_name or "generated_theme").strip()
+    # Keep the download filename safe; the bot should send the same chosen name to users.
+    name = _UNSAFE_FILENAME.sub("", name).strip(" .-_")
+    name = re.sub(r"\s+", "_", name)[:64]
+    return f"{name or 'generated_theme'}.attheme"
+
+
 @router.post("/api/v1/generate", dependencies=[Depends(require_api_key)], tags=["themes"])
-async def generate_theme(request: Request, image: UploadFile) -> Response:
+async def generate_theme(
+    request: Request,
+    image: UploadFile,
+    theme_name: str | None = Form(default=None, max_length=80),
+) -> Response:
     client_key = request.client.host if request.client else "unknown"
     _check_rate_limit(client_key)
     image_bytes = await read_and_validate_image(image)
@@ -58,11 +72,12 @@ async def generate_theme(request: Request, image: UploadFile) -> Response:
     finally:
         await image.close()
 
+    filename = _theme_filename(theme_name)
     return Response(
         content=content,
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": 'attachment; filename="generated_theme.attheme"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "no-store",
         },
     )
