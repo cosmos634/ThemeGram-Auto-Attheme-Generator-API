@@ -10,7 +10,6 @@ _KEY = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 def _wallpaper_file_offset(color_body: bytes) -> tuple[bytes, int]:
-    """Build Telegram's byte-offset header for an embedded .attheme wallpaper."""
     offset = 0
     while True:
         header = f"wallpaperFileOffset={offset}\n".encode("ascii")
@@ -26,11 +25,6 @@ def generate_attheme(
     colors: dict[str, str],
     wallpaper_bytes: bytes | None = None,
 ) -> bytes:
-    """Generate a Telegram Android .attheme with an optional binary JPEG wallpaper.
-
-    Telegram uses both WPS/WPE markers and wallpaperFileOffset. The offset is
-    the absolute byte index of the first wallpaper byte, not a character count.
-    """
     template = template_path.read_text(encoding="utf-8")
     mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
     if not isinstance(mapping, dict) or not mapping:
@@ -44,6 +38,7 @@ def generate_attheme(
         key = line.split("=", 1)[0].strip()
         positions.setdefault(key, []).append(index)
 
+    missing_keys = []
     for key, role in mapping.items():
         if not isinstance(key, str) or not _KEY.fullmatch(key):
             raise ValueError("Invalid theme key in mapping.")
@@ -51,14 +46,15 @@ def generate_attheme(
             raise ValueError(f"Unknown color role for theme key: {key}")
         indexes = positions.get(key)
         if not indexes:
+            missing_keys.append(key)
             continue
         value = rgb_to_telegram_int(colors[role])
         for index in indexes:
             lines[index] = f"{key}={value}"
 
-    # Strip stale offsets. When an embedded wallpaper is present, also remove
-    # chat_wallpaper: Telegram treats that key as a solid/gradient background
-    # and its preview path then skips the embedded WPS image entirely.
+    if missing_keys:
+        raise ValueError(f"Template is missing mapped Telegram keys: {', '.join(missing_keys[:10])}")
+
     lines = [
         line for line in lines
         if not line.startswith("wallpaperFileOffset=")

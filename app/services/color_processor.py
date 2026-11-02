@@ -1,14 +1,28 @@
 from __future__ import annotations
 
+import colorsys
 import re
 
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+_ARGB = re.compile(r"^#[0-9A-Fa-f]{8}$")
 
 
-def _luminance(hex_color: str) -> float:
-    rgb = [int(hex_color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
-    linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in rgb]
-    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+def _rgb(value: str) -> tuple[int, int, int]:
+    return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def _hex(rgb: tuple[int, int, int]) -> str:
+    return "#{:02X}{:02X}{:02X}".format(*(max(0, min(255, round(v))) for v in rgb))
+
+
+def _linear_channel(value: int) -> float:
+    channel = value / 255
+    return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+
+def _luminance(color: str) -> float:
+    red, green, blue = _rgb(color)
+    return 0.2126 * _linear_channel(red) + 0.7152 * _linear_channel(green) + 0.0722 * _linear_channel(blue)
 
 
 def contrast_ratio(a: str, b: str) -> float:
@@ -18,86 +32,117 @@ def contrast_ratio(a: str, b: str) -> float:
     return (light + 0.05) / (dark + 0.05)
 
 
-def _rgb(hex_color: str) -> tuple[int, int, int]:
-    return tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
-
-
-def _hex(rgb: tuple[int, int, int]) -> str:
-    return "#{:02X}{:02X}{:02X}".format(*rgb)
-
-
 def _mix(a: str, b: str, amount: float) -> str:
     left, right = _rgb(a), _rgb(b)
-    return _hex(tuple(round(x * (1 - amount) + y * amount) for x, y in zip(left, right)))
+    return _hex(tuple(x * (1 - amount) + y * amount for x, y in zip(left, right)))
 
 
-def _best_text_color(background: str, minimum: float = 4.5) -> str:
-    # Pure black/white provide the strongest reliable contrast for arbitrary images.
-    candidates = ("#FFFFFF", "#000000")
-    best = max(candidates, key=lambda color: contrast_ratio(color, background))
-    if contrast_ratio(best, background) >= minimum:
-        return best
-    return best
+def _best_text_color(background: str) -> str:
+    return max(("#FFFFFF", "#000000"), key=lambda color: contrast_ratio(color, background))
 
 
 def _ensure_surface_contrast(color: str, background: str, minimum: float = 2.2) -> str:
     if contrast_ratio(color, background) >= minimum:
         return color
-    # Move the sampled hue toward whichever neutral gives better separation.
-    targets = ("#FFFFFF", "#000000")
-    target = max(targets, key=lambda candidate: contrast_ratio(candidate, background))
+    target = max(("#FFFFFF", "#000000"), key=lambda candidate: contrast_ratio(candidate, background))
     low, high = 0.0, 1.0
-    for _ in range(16):
+    for _ in range(18):
         amount = (low + high) / 2
-        candidate = _mix(color, target, amount)
-        if contrast_ratio(candidate, background) >= minimum:
+        if contrast_ratio(_mix(color, target, amount), background) >= minimum:
             high = amount
         else:
             low = amount
     return _mix(color, target, high)
 
 
+def _hue_color(source: str, shift: float, saturation: float = 0.68, value: float = 0.82) -> str:
+    hue, _, _ = colorsys.rgb_to_hsv(*(channel / 255 for channel in _rgb(source)))
+    return _hex(tuple(round(channel * 255) for channel in colorsys.hsv_to_rgb((hue + shift) % 1, saturation, value)))
+
+
 def process_colors(palette: dict[str, str]) -> dict[str, str]:
     required = {"primary", "secondary", "accent", "background"}
     if not required.issubset(palette):
         raise ValueError("Palette is missing required color roles.")
-    result = dict(palette)
-    for role, color in result.items():
+    for role, color in palette.items():
         if not isinstance(color, str) or not _HEX.fullmatch(color):
             raise ValueError(f"Invalid color for role: {role}")
-        result[role] = color.upper()
 
-    background = result["background"]
-    primary = _ensure_surface_contrast(result["primary"], background)
-    secondary = _ensure_surface_contrast(result["secondary"], background)
-    accent = _ensure_surface_contrast(result["accent"], background, 3.0)
+    primary_source = palette["primary"].upper()
+    secondary_source = palette["secondary"].upper()
+    accent_source = palette["accent"].upper()
+    background = palette["background"].upper()
+    primary = _ensure_surface_contrast(primary_source, background, 2.2)
+    secondary = _ensure_surface_contrast(secondary_source, background, 2.0)
+    accent = _ensure_surface_contrast(accent_source, background, 3.0)
 
-    result["primary"] = primary
-    result["secondary"] = secondary
-    result["accent"] = accent
-    result["text"] = _best_text_color(background)
-    result["muted_text"] = "#D0D3DA" if result["text"] == "#FFFFFF" else "#454852"
-    result["text_on_primary"] = _best_text_color(primary)
-    result["text_on_secondary"] = _best_text_color(secondary)
-    result["text_on_accent"] = _best_text_color(accent)
+    text = _best_text_color(background)
+    incoming_bg = _ensure_surface_contrast(_mix(background, secondary, 0.22), background, 1.35)
+    outgoing_bg = _ensure_surface_contrast(_mix(background, primary, 0.38), background, 1.55)
+    incoming_text = _best_text_color(incoming_bg)
+    outgoing_text = _best_text_color(outgoing_bg)
+    muted = _mix(text, background, 0.38)
+    primary_muted = _mix(_best_text_color(primary), primary, 0.35)
+    icon = _mix(text, background, 0.16)
+    divider_rgb = _mix(text, background, 0.78)
 
-    # Guard every foreground/surface pair after all automatic adjustments.
+    result = {
+        "primary": primary,
+        "secondary": secondary,
+        "accent": accent,
+        "background": background,
+        "surface": background,
+        "surface_alt": _mix(background, secondary, 0.12),
+        "text": text,
+        "muted_text": muted,
+        "text_on_primary": _best_text_color(primary),
+        "text_on_secondary": _best_text_color(secondary),
+        "text_on_accent": _best_text_color(accent),
+        "incoming_bg": incoming_bg,
+        "incoming_text": incoming_text,
+        "incoming_accent": _ensure_surface_contrast(accent, incoming_bg, 2.0),
+        "outgoing_bg": outgoing_bg,
+        "outgoing_text": outgoing_text,
+        "outgoing_accent": _ensure_surface_contrast(accent, outgoing_bg, 2.0),
+        "on_primary": _best_text_color(primary),
+        "primary_muted": primary_muted,
+        "icon": icon,
+        "link": accent,
+        "danger": "#D64545" if _luminance(background) > 0.35 else "#FF7777",
+        "success": "#218B55" if _luminance(background) > 0.35 else "#55D68B",
+        "divider": divider_rgb,
+        "selected": "#33000000" if _luminance(background) > 0.35 else "#33FFFFFF",
+        "shadow": "#22000000",
+    }
+
+    avatar_roles = ("red", "orange", "green", "cyan", "blue", "violet", "pink", "saved")
+    for index, name in enumerate(avatar_roles):
+        if name == "saved":
+            color = accent
+        else:
+            color = _hue_color(accent_source, index / 7)
+        result[f"avatar_{name}"] = _ensure_surface_contrast(color, background, 1.8)
+
     for foreground, surface in (
         ("text", "background"),
+        ("incoming_text", "incoming_bg"),
+        ("outgoing_text", "outgoing_bg"),
         ("text_on_primary", "primary"),
         ("text_on_secondary", "secondary"),
         ("text_on_accent", "accent"),
     ):
         if contrast_ratio(result[foreground], result[surface]) < 4.5:
-            result[foreground] = "#FFFFFF" if _luminance(result[surface]) < 0.179 else "#000000"
+            result[foreground] = _best_text_color(result[surface])
     return result
 
 
 def rgb_to_telegram_int(hex_color: str) -> str:
-    if not _HEX.fullmatch(hex_color):
-        raise ValueError("Color must be #RRGGBB.")
-    red, green, blue = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
-    value = 0xFF000000 | (red << 16) | (green << 8) | blue
-    if value >= 2 ** 31:
-        value -= 2 ** 32
-    return str(value)
+    if _HEX.fullmatch(hex_color):
+        alpha = 0xFF
+        red, green, blue = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    elif _ARGB.fullmatch(hex_color):
+        alpha, red, green, blue = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5, 7))
+    else:
+        raise ValueError("Color must be #RRGGBB or #AARRGGBB.")
+    value = (alpha << 24) | (red << 16) | (green << 8) | blue
+    return str(value - 2 ** 32 if value >= 2 ** 31 else value)
