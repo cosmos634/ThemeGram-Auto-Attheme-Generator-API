@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from urllib.parse import quote
 from collections import defaultdict, deque
 from threading import Lock
 from time import monotonic
@@ -76,7 +77,7 @@ async def generate_theme(
         content=content,
         media_type="application/octet-stream",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": f'attachment; filename="generated_theme.attheme"; filename*=UTF-8\'\'{quote(filename, safe="")}',
             "Cache-Control": "no-store",
         },
     )
