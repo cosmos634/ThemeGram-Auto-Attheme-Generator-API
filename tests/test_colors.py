@@ -13,3 +13,16 @@ def test_contrast_ratio():
 def test_text_color_has_good_contrast():
     result = process_colors({"primary": "#123456", "secondary": "#234567", "accent": "#FF0000", "background": "#FFFFFF"})
     assert contrast_ratio(result["text"], result["background"]) >= 4.5
+
+
+def test_all_surface_text_pairs_are_readable():
+    result = process_colors({
+        "primary": "#777777",
+        "secondary": "#888888",
+        "accent": "#999999",
+        "background": "#777777",
+    })
+    assert contrast_ratio(result["text"], result["background"]) >= 4.5
+    assert contrast_ratio(result["text_on_primary"], result["primary"]) >= 4.5
+    assert contrast_ratio(result["text_on_secondary"], result["secondary"]) >= 4.5
+    assert contrast_ratio(result["text_on_accent"], result["accent"]) >= 4.5
