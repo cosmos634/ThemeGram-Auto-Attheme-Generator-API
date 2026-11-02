@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 _rate_lock = Lock()
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
-_UNSAFE_FILENAME = re.compile(r"[^A-Za-z0-9._ -]+")
 
 
 def _check_rate_limit(client_key: str) -> None:
@@ -38,9 +37,9 @@ def _check_rate_limit(client_key: str) -> None:
 
 def _theme_filename(theme_name: str | None) -> str:
     name = (theme_name or "generated_theme").strip()
-    # Keep the download filename safe; the bot should send the same chosen name to users.
-    name = _UNSAFE_FILENAME.sub("", name).strip(" .-_")
-    name = re.sub(r"\s+", "_", name)[:64]
+    # Preserve Unicode names (Uzbek/Russian included), but remove path and control characters.
+    name = re.sub(r"[\\/:*?\"<>|\x00-\x1f\x7f]+", "", name)
+    name = re.sub(r"\s+", "_", name).strip(" .-_")[:64]
     return f"{name or 'generated_theme'}.attheme"
 
 
