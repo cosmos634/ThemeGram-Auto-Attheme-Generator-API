@@ -37,3 +37,16 @@ def test_three_dot_popup_menu_text_contrasts_with_its_background():
     assert mapping["actionBarDefaultSubmenuBackground"] == "primary"
     assert mapping["actionBarDefaultSubmenuItem"] == "on_primary"
     assert contrast_ratio(colors["on_primary"], colors["primary"]) >= 4.5
+
+
+def test_inline_keyboard_label_contrasts_with_button_background():
+    mapping = json.loads(settings.mapping_path.read_text(encoding="utf-8"))
+    colors = process_colors({
+        "primary": "#6A4C93",
+        "secondary": "#1982C4",
+        "accent": "#FF595E",
+        "background": "#F4F2F8",
+    })
+    assert mapping["chat_botKeyboardButtonBackground"] == "accent"
+    assert mapping["chat_botKeyboardButtonText"] == "text_on_accent"
+    assert contrast_ratio(colors["text_on_accent"], colors["accent"]) >= 4.5

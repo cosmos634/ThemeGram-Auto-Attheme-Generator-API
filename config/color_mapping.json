@@ -281,7 +281,7 @@
   "chat_emojiPanelEmptyText": "surface",
   "chat_inViews": "incoming_text",
   "windowBackgroundWhiteBlueText3": "link",
-  "chat_botKeyboardButtonText": "on_primary",
+  "chat_botKeyboardButtonText": "text_on_accent",
   "chats_secretName": "text",
   "chat_inReplyLine": "divider",
   "avatar_backgroundOrange": "avatar_orange",
