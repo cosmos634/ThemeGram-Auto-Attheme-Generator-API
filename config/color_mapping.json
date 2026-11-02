@@ -355,7 +355,7 @@
   "chat_gifSaveHintText": "text",
   "chat_messagePanelVoiceBackground": "surface_alt",
   "chat_goDownButtonShadow": "shadow",
-  "actionBarDefaultSubmenuItem": "primary",
+  "actionBarDefaultSubmenuItem": "on_primary",
   "chats_sentCheck": "icon",
   "chat_replyPanelIcons": "icon",
   "player_seekBarBackground": "accent",
