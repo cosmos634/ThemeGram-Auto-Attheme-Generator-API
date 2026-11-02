@@ -52,7 +52,7 @@ X-API-Key: YOUR_SECRET_API_KEY
 
 Multipart form fields: `image` (JPEG, PNG, or WEBP; maximum 10 MiB) and optional `theme_name` (up to 80 characters; Unicode names are supported). The requested name is used for the returned `.attheme` filename.
 
-Returns one `generated_theme.attheme` file. The JPEG wallpaper is embedded as raw binary data between the `WPS` and `WPE` markers, alongside the theme colors.
+Returns one `.attheme` file using the requested theme name. The JPEG wallpaper is embedded as raw binary data between the `WPS` and `WPE` markers, alongside the theme colors.
 
 Example with cURL:
 
