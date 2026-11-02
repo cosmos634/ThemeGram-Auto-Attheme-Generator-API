@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from urllib.parse import quote
@@ -81,6 +82,6 @@ async def generate_theme(
             "Content-Disposition": f'attachment; filename="generated_theme.attheme"; filename*=UTF-8\'\'{quote(filename, safe="")}',
             "Cache-Control": "no-store",
             "X-Generation-Time-Ms": str(round((perf_counter() - started_at) * 1000)),
-            "X-Color-Key-Count": str(len(__import__("json").loads(settings.mapping_path.read_text(encoding="utf-8")))),
+            "X-Color-Key-Count": str(len(json.loads(settings.mapping_path.read_text(encoding="utf-8")))),
         },
     )
