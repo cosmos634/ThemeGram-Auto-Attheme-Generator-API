@@ -26,3 +26,26 @@ def test_all_surface_text_pairs_are_readable():
     assert contrast_ratio(result["text_on_primary"], result["primary"]) >= 4.5
     assert contrast_ratio(result["text_on_secondary"], result["secondary"]) >= 4.5
     assert contrast_ratio(result["text_on_accent"], result["accent"]) >= 4.5
+
+
+def test_semantic_roles_cover_chat_surfaces_and_avatar_palette():
+    result = process_colors({
+        "primary": "#6A4C93",
+        "secondary": "#1982C4",
+        "accent": "#FF595E",
+        "background": "#F4F2F8",
+    })
+    required = {
+        "incoming_bg", "incoming_text", "outgoing_bg", "outgoing_text",
+        "incoming_accent", "outgoing_accent", "surface", "surface_alt",
+        "selected", "shadow", "divider", "avatar_red", "avatar_orange",
+        "avatar_green", "avatar_cyan", "avatar_blue", "avatar_violet",
+        "avatar_pink", "avatar_saved",
+    }
+    assert required.issubset(result)
+    assert contrast_ratio(result["incoming_text"], result["incoming_bg"]) >= 4.5
+    assert contrast_ratio(result["outgoing_text"], result["outgoing_bg"]) >= 4.5
+
+
+def test_argb_conversion_preserves_transparency():
+    assert rgb_to_telegram_int("#33000000") == "855638016"
