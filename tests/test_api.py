@@ -50,7 +50,7 @@ def test_generate_returns_attheme_with_embedded_wallpaper(monkeypatch, tmp_path)
     )
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/octet-stream"
-    assert 'filename="Моя_тема_Purple.attheme"' in response.headers["content-disposition"]
+    assert "filename*=UTF-8''%D0%9C%D0%BE%D1%8F_%D1%82%D0%B5%D0%BC%D0%B0_Purple.attheme" in response.headers["content-disposition"]
     assert b"windowBackgroundWhite=" in response.content
     assert b"chat_wallpaper=" not in response.content
     start = response.content.index(b"\nWPS\n") + len(b"\nWPS\n")
