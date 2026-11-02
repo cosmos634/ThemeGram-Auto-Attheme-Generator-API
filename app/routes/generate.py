@@ -5,7 +5,7 @@ import re
 from urllib.parse import quote
 from collections import defaultdict, deque
 from threading import Lock
-from time import monotonic
+from time import monotonic, perf_counter
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
@@ -50,6 +50,7 @@ async def generate_theme(
     image: UploadFile,
     theme_name: str | None = Form(default=None, max_length=80),
 ) -> Response:
+    started_at = perf_counter()
     client_key = request.client.host if request.client else "unknown"
     _check_rate_limit(client_key)
     image_bytes = await read_and_validate_image(image)
@@ -79,5 +80,7 @@ async def generate_theme(
         headers={
             "Content-Disposition": f'attachment; filename="generated_theme.attheme"; filename*=UTF-8\'\'{quote(filename, safe="")}',
             "Cache-Control": "no-store",
+            "X-Generation-Time-Ms": str(round((perf_counter() - started_at) * 1000)),
+            "X-Color-Key-Count": str(len(__import__("json").loads(settings.mapping_path.read_text(encoding="utf-8")))),
         },
     )
