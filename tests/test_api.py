@@ -46,11 +46,11 @@ def test_generate_returns_attheme_with_embedded_wallpaper(monkeypatch, tmp_path)
         "/api/v1/generate",
         headers={"X-API-Key": "a" * 40},
         files={"image": ("x.png", png_bytes(), "image/png")},
-        data={"theme_name": "CosmOS Purple"},
+        data={"theme_name": "Моя тема Purple"},
     )
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/octet-stream"
-    assert 'filename="CosmOS_Purple.attheme"' in response.headers["content-disposition"]
+    assert 'filename="Моя_тема_Purple.attheme"' in response.headers["content-disposition"]
     assert b"windowBackgroundWhite=" in response.content
     assert b"chat_wallpaper=" not in response.content
     start = response.content.index(b"\nWPS\n") + len(b"\nWPS\n")
