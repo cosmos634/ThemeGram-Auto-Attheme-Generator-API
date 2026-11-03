@@ -4,7 +4,7 @@ import logging
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import settings, validate_startup_config
@@ -27,8 +27,10 @@ def create_app(validate_config: bool = True) -> FastAPI:
     application.include_router(health.router)
     application.include_router(generate.router)
 
-    @application.get("/", include_in_schema=False)
-    async def root() -> dict[str, str]:
+    @application.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+    async def root(request: Request) -> dict[str, str] | Response:
+        if request.method == "HEAD":
+            return Response(status_code=200)
         return {"name": "ThemeGram Auto Attheme Generator API", "version": "1.0.0", "docs": "/docs" if settings.debug else "disabled"}
 
     @application.exception_handler(StarletteHTTPException)
