@@ -52,8 +52,9 @@ async def generate_theme(
     theme_name: str | None = Form(default=None, max_length=80),
 ) -> Response:
     started_at = perf_counter()
-    client_key = request.client.host if request.client else "unknown"
-    _check_rate_limit(client_key)
+    # This API is intended for one authenticated bot server. Rate-limit the
+    # shared API credential, not X-Forwarded-For (which clients can spoof).
+    _check_rate_limit("authenticated-bot")
     image_bytes = await read_and_validate_image(image)
     try:
         palette = analyze_image(image_bytes)
