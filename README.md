@@ -80,11 +80,20 @@ with open("generated_theme.attheme", "wb") as output:
     output.write(response.content)
 ```
 
-### Health check
+### Health check and uptime monitoring
 
-```bash
-curl http://127.0.0.1:8000/health
+Both `GET` and `HEAD` are supported on `/`, `/health`, and `/ping`.
+All three return HTTP 200 without requiring an API key, so uptime monitors can
+check the service without exposing credentials.
+
+For UptimeRobot, create an **HTTP(s)** monitor with this URL:
+
+```text
+https://YOUR-RENDER-SERVICE.onrender.com/health
 ```
+
+Use a 5-minute interval and accept HTTP 200. Do not monitor
+`/api/v1/generate`; that endpoint requires an API key and an image upload.
 
 `/health` intentionally reveals no secrets or internal configuration.
 
@@ -135,7 +144,7 @@ pytest -q
 2. Set a strong `API_KEY` as a server environment secret; do not commit `.env`.
 3. Restrict inbound traffic to HTTPS and, if practical, allowlist the bot server's outbound IP at the proxy/firewall.
 4. Keep request body limits at the proxy (at least the configured 10 MiB file cap plus multipart overhead).
-5. Use one Uvicorn worker if relying on the built-in in-memory rate limiter. For multiple workers, enforce rate limits at the reverse proxy instead.
+5. Use one Uvicorn worker if relying on the built-in in-memory rate limiter. The generator is intended for one trusted bot server, so its process-local limit is shared across authenticated generation requests. For multiple workers, enforce rate limits at the reverse proxy instead.
 6. Disable debug mode and do not expose `/docs` publicly unless protected at the proxy.
 7. Rotate the API key immediately if it is exposed.
 
@@ -144,7 +153,8 @@ pytest -q
 - The API key authenticates the trusted bot server, not an individual Telegram user. The bot must perform its own user-facing authorization and abuse controls.
 - Images are processed in memory and are not intentionally persisted.
 - The application checks actual decoded image format, dimensions, pixel count, and file size. The reverse proxy must also enforce a request-body limit because multipart parsing occurs before route code receives the upload.
-- Rate limiting is process-local; use a single worker or enforce it at the proxy.
+- Rate limiting is process-local and shared across authenticated requests; use a single worker or enforce it at the proxy.
+- Proxy forwarding headers are disabled by default so untrusted `X-Forwarded-For` values cannot spoof client IPs.
 - Use HTTPS in production. Do not put secrets in query parameters, logs, screenshots, or bot replies.
 
 ## Theme compatibility
