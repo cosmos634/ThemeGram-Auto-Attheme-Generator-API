@@ -27,7 +27,7 @@ def create_app(validate_config: bool = True) -> FastAPI:
     application.include_router(health.router)
     application.include_router(generate.router)
 
-    @application.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+    @application.api_route("/", methods=["GET", "HEAD"], include_in_schema=False, response_model=None)
     async def root(request: Request) -> dict[str, str] | Response:
         if request.method == "HEAD":
             return Response(status_code=200)
